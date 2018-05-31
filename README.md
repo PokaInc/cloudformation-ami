@@ -87,7 +87,7 @@ Update requires: Replacement
 
 #### Return Values
 
-Ref
+`Ref`
 
 When you pass the logical ID of an Custom::AMI object to the intrinsic Ref function, 
 the object's Image Id is returned. For example: `ami-467ca739`.
