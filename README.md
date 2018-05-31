@@ -53,7 +53,7 @@ Properties:
 
 #### Properties
 
-`Image`
+##### `Image`
 
 Contains parameters that will be passed to the [CreateImage](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateImage.html) action. 
 The following parameters are required by the CreateImage call: `Name`.
@@ -66,7 +66,7 @@ Update requires:
 * `Name`: Replacement
 * `BlockDeviceMappings`: TODO
 
-`ServiceToken`
+##### `ServiceToken`
 
 The ARN of the AMI Lambda Function created by the AMI infrastructure CloudFormation stack.
 Typically, you can set the `ServiceToken` to `!ImportValue AMILambdaFunctionArn`.
@@ -76,7 +76,7 @@ Required: Yes
 Update requires: No interruption
 
 
-#### `TemplateInstance`
+##### `TemplateInstance`
 
 Contains parameters that will be passed to the [RunInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RunInstances.html) action.
 The following parameters will not be passed to the RunInstances call: `MaxCount`, `MinCount`, `DryRun`.
@@ -87,7 +87,7 @@ Update requires: Replacement
 
 #### Return Values
 
-`Ref`
+##### `Ref`
 
 When you pass the logical ID of an Custom::AMI object to the intrinsic Ref function, 
 the object's Image Id is returned. For example: `ami-467ca739`.
