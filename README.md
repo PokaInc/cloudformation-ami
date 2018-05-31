@@ -76,7 +76,7 @@ Required: Yes
 Update requires: No interruption
 
 
-####`TemplateInstance`
+#### `TemplateInstance`
 
 Contains parameters that will be passed to the [RunInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RunInstances.html) action.
 The following parameters will not be passed to the RunInstances call: `MaxCount`, `MinCount`, `DryRun`.
