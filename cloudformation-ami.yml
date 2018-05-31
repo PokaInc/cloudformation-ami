@@ -1,0 +1,180 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates a EC2 AMI using CloudFormation
+Resources:
+  AMILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: AccessAll
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: '1'
+            Effect: Allow
+            Action:
+            - '*'
+            Resource: "*"
+
+##################
+# Lambda Functions
+##################
+
+  AMILambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.cloudformation_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref StateMachine
+
+  CreateInstanceLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.create_instance_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+  GetInstanceStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.get_instance_status_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+  CreateImageFromInstanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.create_image_from_instance_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+  GetImageStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.get_image_status_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+  TerminateInstanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.terminate_instance_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+  SignalCloudFormationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.signal_cloudformation_handler
+      Role: !GetAtt AMILambdaRole.Arn
+      Code: ami.py
+      Runtime: python3.6
+      Timeout: '300'
+
+###############
+# State Machine
+###############
+
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+      DefinitionString: !Sub |-
+        {
+          "Comment": "State machine for managing AMIs",
+          "StartAt": "CreateInstance",
+          "States": {
+            "CreateInstance": {
+              "Type": "Task",
+              "Resource": "${CreateInstanceLambdaFunction.Arn}",
+              "Next": "WaitForInstance"
+            },
+            "WaitForInstance": {
+              "Type": "Wait",
+              "Seconds": 20,
+              "Next": "GetInstanceStatus"
+            },
+            "GetInstanceStatus": {
+              "Type": "Task",
+              "Resource": "${GetInstanceStatusLambdaFunction.Arn}",
+              "Next": "CheckInstanceStatus"
+            },
+            "CheckInstanceStatus": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.instance_state",
+                  "StringEquals": "READY",
+                  "Next": "CreateImageFromInstance"
+                }
+              ],
+              "Default": "WaitForInstance"
+            },
+            "CreateImageFromInstance": {
+              "Type": "Task",
+              "Resource": "${CreateImageFromInstanceFunction.Arn}",
+              "Next": "WaitForImage"
+            },
+            "WaitForImage": {
+              "Type": "Wait",
+              "Seconds": 20,
+              "Next": "GetImageStatus"
+            },
+            "GetImageStatus": {
+              "Type": "Task",
+              "Resource": "${GetImageStatusLambdaFunction.Arn}",
+              "Next": "CheckImageStatus"
+            },
+            "CheckImageStatus": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.image_state",
+                  "StringEquals": "READY",
+                  "Next": "TerminateInstance"
+                }
+              ],
+              "Default": "WaitForImage"
+            },
+            "TerminateInstance": {
+              "Type": "Task",
+              "Resource": "${TerminateInstanceFunction.Arn}",
+              "Next": "SignalCloudFormation"
+            },
+            "SignalCloudFormation": {
+              "Type": "Task",
+              "Resource": "${SignalCloudFormationFunction.Arn}",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  AMILambdaFunctionArn:
+    Value: !GetAtt AMILambdaFunction.Arn
+    Export:
+      Name: AMILambdaFunctionArn

@@ -1,0 +1,69 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates a EC2 AMI using CloudFormation
+
+Resources:
+  TemplateInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: EC2Access
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: '1'
+            Effect: Allow
+            Action:
+            - ec2:CreateTags
+            Resource:
+            - '*'
+
+  TemplateInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref TemplateInstanceRole
+
+  AMI:
+    Type: Custom::AMI
+    Properties:
+      ServiceToken: !ImportValue AMILambdaFunctionArn
+      Image:
+        Name: some-image-name
+        Description: some description for the image
+      TemplateInstance:
+        ImageId: ami-467ca739  # the base AMI that will be used to create your AMI
+        IamInstanceProfile:
+          Arn: !GetAtt TemplateInstanceProfile.Arn
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash -x
+            yum -y install mysql # provisioning example
+            # Signal that the instance is ready
+            INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+            aws ec2 create-tags --resources $INSTANCE_ID --tags Key=UserDataFinished,Value=true --region ${AWS::Region}
+        KeyName: spg-test
+        InstanceType: t2.nano
+        SecurityGroupIds:
+        - sg-e7bf78d1
+        SubnetId: subnet-ba14ab92
+        BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            VolumeSize: '10'
+            VolumeType: gp2
+
+Outputs:
+  AMIId:
+    Value: !Ref AMI
