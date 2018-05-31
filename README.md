@@ -64,7 +64,7 @@ Required: Yes
 Update requires:
 * `Description`: No interruption
 * `Name`: Replacement
-* `BlockDeviceMappings`: 
+* `BlockDeviceMappings`: TODO
 
 `ServiceToken`
 
