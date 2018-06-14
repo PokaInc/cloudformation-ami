@@ -2,6 +2,8 @@
 
 Manage AMIs using CloudFormation
 
+Blog post: https://medium.com/poka-techblog/managing-amis-using-cloudformation-a097f86a3622
+
 ## Motivation
 
 AMIs have never been available as a first class resource in CloudFormation.
