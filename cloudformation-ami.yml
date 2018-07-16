@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates a EC2 AMI using CloudFormation
+Description: Creates a EC2 AMI using CloudFormation (https://github.com/PokaInc/cloudformation-ami)
 Resources:
   AMILambdaRole:
     Type: AWS::IAM::Role
