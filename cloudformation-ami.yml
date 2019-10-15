@@ -119,8 +119,13 @@ Resources:
               - Effect: Allow
                 Action:
                   - "lambda:InvokeFunction"
-                Resource: "*"
-
+                Resource:
+                - !Sub "${CreateInstanceLambdaFunction.Arn}"
+                - !Sub "${GetInstanceStatusLambdaFunction.Arn}"
+                - !Sub "${CreateImageFromInstanceFunction.Arn}"
+                - !Sub "${GetImageStatusLambdaFunction.Arn}"
+                - !Sub "${TerminateInstanceFunction.Arn}"
+                - !Sub "${SignalCloudFormationFunction.Arn}"
   StateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
