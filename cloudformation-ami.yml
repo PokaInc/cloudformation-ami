@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates a EC2 AMI using CloudFormation
+Description: Creates a EC2 AMI using CloudFormation (https://github.com/PokaInc/cloudformation-ami)
 Resources:
   AMILambdaRole:
     Type: AWS::IAM::Role
@@ -99,10 +99,37 @@ Resources:
 # State Machine
 ###############
 
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource:
+                - !Sub "${CreateInstanceLambdaFunction.Arn}"
+                - !Sub "${GetInstanceStatusLambdaFunction.Arn}"
+                - !Sub "${CreateImageFromInstanceFunction.Arn}"
+                - !Sub "${GetImageStatusLambdaFunction.Arn}"
+                - !Sub "${TerminateInstanceFunction.Arn}"
+                - !Sub "${SignalCloudFormationFunction.Arn}"
   StateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+      RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-
         {
           "Comment": "State machine for managing AMIs",
